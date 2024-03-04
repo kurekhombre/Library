@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres:16.1-alpine3.19
+    restart: always
+    env_file:
+      - ./env_vars/postgres.env
+    volumes:
+      - ./dataset:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
