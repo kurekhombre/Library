@@ -9,8 +9,8 @@ for i in {1..45}; do
     if /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P "YourStrongPassw0rd" -Q "SELECT 1" &>/dev/null; then
         echo "SQL Server is up! Running the setup script."
         
-        /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P "YourStrongPassw0rd" master -i /usr/src/app/create_queries.sql
-        /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P "YourStrongPassw0rd" master -i /usr/src/app/insert_queries.sql
+        /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P "YourStrongPassw0rd" -i /usr/src/app/create_queries.sql
+        /opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U sa -P "YourStrongPassw0rd" -i /usr/src/app/insert_queries.sql
 
         break
     else
