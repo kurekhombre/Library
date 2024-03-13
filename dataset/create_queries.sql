@@ -1,0 +1,84 @@
+CREATE DATABASE DemoData;
+GO
+USE DemoData;
+GO
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Authors')
+CREATE TABLE Authors (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ Name VARCHAR(100)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Users')
+CREATE TABLE Users (
+   ID INT IDENTITY(1,1) PRIMARY KEY,
+   Name VARCHAR(100),
+   Address VARCHAR(255)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Books')
+CREATE TABLE Books (
+ ISBN VARCHAR(255) PRIMARY KEY,
+ Title VARCHAR(255),
+ Author INT,
+ Publisher INT,
+ Category INT,
+ FOREIGN KEY (Author) REFERENCES Authors(ID)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Rents')
+CREATE TABLE Rents (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ User_ID INT,
+ Book VARCHAR(255),
+ Rental_Date DATE,
+ Return_Date DATE,
+ FOREIGN KEY (User_ID) REFERENCES Users(ID),
+ FOREIGN KEY (Book) REFERENCES Books(ISBN)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Reservations')
+CREATE TABLE Reservations (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ User_ID INT,
+ Book VARCHAR(255),
+ Rental_Date DATE,
+ FOREIGN KEY (User_ID) REFERENCES Users(ID),
+ FOREIGN KEY (Book) REFERENCES Books(ISBN)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Publishers')
+CREATE TABLE Publishers (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ Name VARCHAR(255),
+ Address VARCHAR(255)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Categories')
+CREATE TABLE Categories (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ Category VARCHAR(255)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Ratings')
+CREATE TABLE Ratings (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ User_ID INT,
+ Book VARCHAR(255),
+ Rating INT,
+ FOREIGN KEY (User_ID) REFERENCES Users(ID),
+ FOREIGN KEY (Book) REFERENCES Books(ISBN)
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Rents_History')
+CREATE TABLE Rents_History (
+ ID INT IDENTITY(1,1) PRIMARY KEY,
+ User_ID INT,
+ Book VARCHAR(255),
+ Rental_Date DATE,
+ Return_Date DATE,
+ FOREIGN KEY (User_ID) REFERENCES Users(ID),
+ FOREIGN KEY (Book) REFERENCES Books(ISBN)
+);
+
+
+GO
