@@ -2,7 +2,9 @@
 
 ## Introduction
 
+
 This Library Management System is designed to manage and streamline library operations by integrating various technologies for data handling and API services. The system features an ETL pipeline for data extraction, transformation, and loading, leverages Microsoft SQL for robust data storage, and provides a FastAPI interface for easy and efficient access to library data.
+
 
 ## Architecture
 
