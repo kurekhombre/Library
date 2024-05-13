@@ -11,8 +11,8 @@ import numpy as np
 from faker import Faker
 
 class DataGenerator:
-    def __init__(self, lang="PL-pl", rows_numb=5) -> None:
-        self.fake = Faker(lang)
+    def __init__(self, locale="PL-pl", rows_numb=5) -> None:
+        self.fake = Faker(locale)
         self.rows_numb = rows_numb
         self.data = None
 
@@ -34,11 +34,18 @@ class DataGenerator:
 class UserDataGenerator(DataGenerator):
     def generate_data(self):
         users_data = {
-            # 'ID': np.arange(1, self.rows_numb + 1),
             'Name': [self.fake.name().replace('pan ', '').replace('pani ', '') for _ in range(self.rows_numb)],
             'Address': [self.fake.address().replace('\n', ' - ') for _ in range(self.rows_numb)]
         }
         return pd.DataFrame(users_data)
+    
+class AuthorDataGenerator(DataGenerator):
+    def generate_data(self):
+        authors_data = {
+            'Name': [self.fake.name().replace('pan ', '').replace('pani ', '') for _ in range(self.rows_numb)],
+            'Address': [self.fake.address().replace('\n', ' - ') for _ in range(self.rows_numb)]
+        }
+        return pd.DataFrame(authors_data)
 
 class BookDataGenerator(DataGenerator):
     def __init__(self, locale='pl_PL', rows_numb=5, author_ids=None, publisher_ids=None, category_ids=None):
@@ -51,15 +58,63 @@ class BookDataGenerator(DataGenerator):
         books_data = {
             'ISBN': [self.fake.isbn13().replace('-', '') for _ in range(self.rows_numb)],
             'Title': [' '.join(random.sample(self.fake.words(), 2)).capitalize() for _ in range(self.rows_numb)],
-            # 'Author': np.random.choice(authors_data['ID'], rows_numb),
-            # 'Publisher': np.random.choice(publishers_data['ID'], rows_numb),
-            # 'Category': np.random.choice(categories_df['ID'], rows_numb)
-            'Author': [self.fake.name() for _ in range(self.rows_numb)],
-            'Publisher': [self.fake.name() for _ in range(self.rows_numb)],
-            'Category': [self.fake.name() for _ in range(self.rows_numb)]
+            'Author': [np.random.choice(self.author_ids) if self.author_ids else self.fake.name() for _ in range(self.rows_numb)],
+            'Publisher': [np.random.choice(self.publisher_ids) if self.publisher_ids else self.fake.name() for _ in range(self.rows_numb)],
+            'Category': [np.random.choice(self.category_ids) if self.category_ids else self.fake.name() for _ in range(self.rows_numb)]
         }
         return pd.DataFrame(books_data)
 
+class PublisherDataGenerator(DataGenerator):
+    def generate_data(self):
+        publishers_data = {
+            'Name': [' '.join(random.sample(self.fake.words(), 2)).capitalize() for _ in range(self.rows_numb)],
+        }
+        return pd.DataFrame(publishers_data)
+
+class CategoryDataGenerator(DataGenerator):
+    def generate_data(self):
+        categories_data = {
+            'Name': [' '.join(random.sample(self.fake.words(), 2)).capitalize() for _ in range(self.rows_numb)],
+        }
+        return pd.DataFrame(categories_data)
+
+class RatingDataGenerator(DataGenerator):
+    def __init__(self, locale='pl_PL', rows_numb=5, user_ids=None, book_ids=None):
+        super().__init__(locale, rows_numb)
+        self.user_ids = user_ids or []
+        self.book_ids = book_ids or []
+
+    def generate_data(self):
+        ratings_data = {
+            'UserID': [np.random.choice(self.user_ids) if self.user_ids else self.fake.name() for _ in range(self.rows_numb)],
+            'BookID': [np.random.choice(self.book_ids) if self.book_ids else self.fake.name() for _ in range(self.rows_numb)],
+            'Rate': [random.randint(1,5) for _ in range(self.rows_numb)],
+            'Comment': [' '.join(random.sample(self.fake.words(), 2)).capitalize() for _ in range(self.rows_numb)]
+        }
+        return pd.DataFrame(ratings_data)
+
+class RentalDataGenerator(DataGenerator):
+    def __init__(self, locale='en_US', rows_numb=5, user_ids=None, book_ids=None):
+        super().__init__(locale, rows_numb)
+        self.user_ids = user_ids or []
+        self.book_ids = book_ids or []
+
+    def generate_data(self):
+        rental_dates = [self.fake.date_between(start_date='-2y', end_date='today') for _ in range(self.rows_numb)]
+        return_date = [self.calculate_return_date(rd) for rd in rental_dates]
+
+        rentals_data = {
+            'UserID': [np.random.choice(self.user_ids) for _ in range(self.rows_numb)],
+            'BookID': [np.random.choice(self.book_ids) for _ in range(self.rows_numb)],
+            'RentalDate': rental_dates,
+            'ReturnDate': return_date
+        }
+        return pd.DataFrame(rentals_data)
+
+    def calculate_return_date(self, rental_date):
+        duration = random.choice([14, 21, 28])
+        return rental_date + timedelta(days=duration)
+    
 ###---
 class DatabaseFetcher:
     def __init__(self, mssql_conn_id="airflow_mssql", schema="projects"):
@@ -91,34 +146,90 @@ dag_params = {
 with DAG(**dag_params) as dag:
     @dag.task(task_id="insert_book_data_mssql_task")
     def insert_book_data_mssql_task():
-        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
-        book_generator = BookDataGenerator()
-        fetcher = DatabaseFetcher()
+        fetcher = DatabaseFetcher(mssql_conn_id="airflow_mssql", schema="projects")
 
         author_ids = fetcher.fetch_ids("library_db.Authors", "ID")
         publisher_ids = fetcher.fetch_ids("library_db.Publishers", "ID")
         category_ids = fetcher.fetch_ids("library_db.Categories", "ID")
-        print("AUTHOR IDS")
-        print(author_ids)
-        print("AUTHOR IDS ENDS")
-        rows = book_generator.get_data_as_tuples()
-        print(rows)
-        # INSERT INTO library_db.Books ("ISBN", "Title", "Author", "Publisher", "Category") VALUES (<rows>);
 
-        # target_fields = ["ISBN", "Title", "Author", "Publisher", "Category"]
+        book_generator = BookDataGenerator(locale='pl_PL', rows_numb=100, 
+                                        author_ids=author_ids, 
+                                        publisher_ids=publisher_ids, 
+                                        category_ids=category_ids)
+
+        rows = book_generator.get_data_as_tuples()
+
         target_fields = book_generator.get_target_fields()
+
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
         mssql_hook.insert_rows(table="library_db.Books", rows=rows, target_fields=target_fields)
 
     @dag.task(task_id="insert_user_data_mssql_task")
     def insert_user_data_mssql_task():
         mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
-        user_generator = UserDataGenerator()
+        user_generator = UserDataGenerator(locale='pl_PL', rows_numb=100)
         rows = user_generator.get_data_as_tuples()
-        print(rows)
-
-        # target_fields = ["Name", "Address"]
         target_fields = user_generator.get_target_fields()
         mssql_hook.insert_rows(table="library_db.Users", rows=rows, target_fields=target_fields)
 
+    @dag.task(task_id="insert_author_data_mssql_task")
+    def insert_author_data_mssql_task():
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
+        author_generator = AuthorDataGenerator(locale='pl_PL', rows_numb=100)
+        rows = author_generator.get_data_as_tuples()
+        target_fields = author_generator.get_target_fields()
+        mssql_hook.insert_rows(table="library_db.Authors", rows=rows, target_fields=target_fields)
 
-    insert_book_data_mssql_task() >> insert_user_data_mssql_task()
+    @dag.task(task_id="insert_publisher_data_mssql_task")
+    def insert_publisher_data_mssql_task():
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
+        publisher_generator = PublisherDataGenerator(locale='pl_PL', rows_numb=100)
+        rows = publisher_generator.get_data_as_tuples()
+        target_fields = publisher_generator.get_target_fields()
+        mssql_hook.insert_rows(table="library_db.Publishers", rows=rows, target_fields=target_fields)
+
+    @dag.task(task_id="insert_category_data_mssql_task")
+    def insert_category_data_mssql_task():
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
+        category_generator = CategoryDataGenerator(locale='pl_PL', rows_numb=100)
+        rows = category_generator.get_data_as_tuples()
+        target_fields = category_generator.get_target_fields()
+        mssql_hook.insert_rows(table="library_db.Categories", rows=rows, target_fields=target_fields)
+
+    @dag.task(task_id="insert_rating_data_mssql_task")
+    def insert_rating_data_mssql_task():
+        fetcher = DatabaseFetcher(mssql_conn_id="airflow_mssql", schema="projects")
+
+        user_ids = fetcher.fetch_ids("library_db.Users", "ID")
+        book_ids = fetcher.fetch_ids("library_db.Books", "ID")
+
+        rating_generator = RatingDataGenerator(locale='pl_PL', rows_numb=100, 
+                                        user_ids=user_ids, 
+                                        book_ids=book_ids)
+
+        rows = rating_generator.get_data_as_tuples()
+
+        target_fields = rating_generator.get_target_fields()
+
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
+        mssql_hook.insert_rows(table="library_db.Ratings", rows=rows, target_fields=target_fields)
+
+    @dag.task(task_id="insert_rental_data_mssql_task")
+    def insert_rental_data_mssql_task():
+        fetcher = DatabaseFetcher(mssql_conn_id="airflow_mssql", schema="projects")
+
+        user_ids = fetcher.fetch_ids("library_db.Users", "ID")
+        book_ids = fetcher.fetch_ids("library_db.Books", "ID")
+
+        rental_generator = RentalDataGenerator(locale='pl_PL', rows_numb=100, 
+                                        user_ids=user_ids, 
+                                        book_ids=book_ids)
+
+        rows = rental_generator.get_data_as_tuples()
+
+        target_fields = rental_generator.get_target_fields()
+
+        mssql_hook = MsSqlHook(mssql_conn_id="airflow_mssql", schema="projects")
+        mssql_hook.insert_rows(table="library_db.Rents", rows=rows, target_fields=target_fields)
+
+    insert_user_data_mssql_task() >> insert_author_data_mssql_task() >> insert_publisher_data_mssql_task() >> insert_category_data_mssql_task() >> insert_book_data_mssql_task() >> insert_rating_data_mssql_task() >> insert_rental_data_mssql_task()
