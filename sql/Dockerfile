@@ -17,6 +17,8 @@ COPY sql/queries/insert_queries.sql /usr/src/app/
 # Give permissions to execute the entrypoint script
 USER root
 RUN chmod +x /usr/src/app/entrypoint.sh
+RUN chown -R mssql /usr/src/app
+
 USER mssql
 
 # Set entrypoint script to run on container start

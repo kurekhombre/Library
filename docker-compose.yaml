@@ -53,6 +53,8 @@ x-airflow-common:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    - ./scripts:/opt/airflow/scripts
+
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
   depends_on:
     postgres:
@@ -111,6 +113,7 @@ services:
       ACCEPT_EULA: "Y"
     ports:
       - "1401:1433"
+    restart: always
 
 
 volumes:

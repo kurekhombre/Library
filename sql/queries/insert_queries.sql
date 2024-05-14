@@ -1,16 +1,41 @@
 USE projects;
 GO
+INSERT INTO library_db.Users (Name, Address)
+VALUES 
+('John Doe', 'Switzerland'),
+('Johan Doge', 'USA');
+
+INSERT INTO library_db.Authors (Name, Address)
+VALUES 
+('Dan X', 'Canada'),
+('Karl Braun', 'Poland');
+
+INSERT INTO library_db.Categories (Name)
+VALUES 
+('Fiction'),
+('Sci-fi'),
+('Drama');
+
+INSERT INTO library_db.Publishers (Name)
+VALUES 
+('Oreily'),
+('XYZ');
 
 INSERT INTO library_db.Books (ISBN, Title, Author, Publisher, Category)
 VALUES 
-('978-3-16-148410-0', 'The Great Gatsby', 'F. Scott Fitzgerald', 'Charles Scribner''s Sons', 'American Fiction'),
-('978-0-14-118280-3', '1984', 'George Orwell', 'Secker and Warburg', 'Dystopian Fiction'),
-('978-0-394-82379-2', 'To Kill a Mockingbird', 'Harper Lee', 'J. B. Lippincott & Co.', 'Southern Gothic Fiction'),
-('978-0-207-18462-6', 'The Book Thief', 'Markus Zusak', 'Picador', 'Historical Fiction'),
-('978-0-06-112006-0', 'Brave New World', 'Aldous Huxley', 'Chatto & Windus', 'Dystopian Fiction'),
-('978-1-85798-236-9', 'Foundation', 'Isaac Asimov', 'Gnome Press', 'Science Fiction'),
-('978-0-452-28423-4', 'Jane Eyre', 'Charlotte Bronte', 'Smith, Elder & Co.', 'Gothic Fiction'),
-('978-0-451-52921-5', 'Fahrenheit 451', 'Ray Bradbury', 'Ballantine Books', 'Dystopian Fiction'),
-('978-0-679-73727-4', 'Crime and Punishment', 'Fyodor Dostoevsky', 'The Russian Messenger', 'Philosophical Fiction'),
-('978-0-141-43948-3', 'Animal Farm', 'George Orwell', 'Secker and Warburg', 'Political Satire');
+('9783161484100', 'The Great Gatsby', '1', '1', '1'),
+('9780141182803', '1984', '1','1', '2'),
+('9780394823792', 'To Kill a Mockingbird', '2', '2', '2'),
+('9780207184626', 'The Book Thief', '1', '1', '3'),
+('9780061120060', 'Brave New World', '2', '2', '3');
 
+
+INSERT INTO library_db.Ratings(UserID, BookID,Rate,Comment) VALUES 
+('1','3', '5', 'Great book!'),
+('2','4', '3','OK');
+
+INSERT INTO library_db.Rents (UserID, BookID, RentalDate, ReturnDate)
+VALUES
+    ('1', '2', '2024-05-01 10:00:00', '2024-05-10 10:00:00'),
+    ('2', '3', '2024-05-02 12:00:00', '2024-05-12 12:00:00'),
+    ('2', '1', '2024-05-03 14:00:00', NULL);  
